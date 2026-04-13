@@ -1,0 +1,84 @@
+trigger: none
+pr: none
+
+resources:
+  repositories:
+    - repository: templates
+      type: github
+      name: liam-goodchild/pipeline-engineering-templates
+      endpoint: liam-goodchild
+      ref: refs/heads/main
+
+pool:
+  vmImage: ubuntu-latest
+
+parameters:
+  - name: terraformAction
+    displayName: Terraform Action
+    type: string
+    default: Plan
+    values: [Plan, Apply, Destroy]
+  - name: environment
+    displayName: Environment
+    type: string
+    values: [Dev, Prod]
+  - name: additionalTfVars
+    displayName: Additional Terraform Variables
+    type: string
+    default: ' '
+
+variables:
+  # API Keys
+  - group: porkbun-secrets
+  # Container, Service Connection & tfvars
+  - name: backendContainerName
+    value: infra-landingzone-platform
+  - name: serviceConnectionName
+    value: sc-platform
+  - name: globalTfvars
+    value: infra/vars/globals.tfvars
+  - name: tfvars
+    value: infra/vars/uks/$(environmentCode).tfvars
+  # State Management
+  - ${{ if eq(parameters.environment, 'Prod') }}:
+      - name: backendResourceGroupName
+        value: rg-terrastate-prd-uks-01
+      - name: backendStorageAccountName
+        value: stterrastateprduks01
+      - name: environmentCode
+        value: prd
+  - ${{ else }}:
+      - name: backendResourceGroupName
+        value: rg-terrastate-prd-uks-01
+      - name: backendStorageAccountName
+        value: stterrastateprduks01
+      - name: environmentCode
+        value: dev
+
+stages:
+  - stage: Terraform
+    displayName: 'Terraform ${{ parameters.terraformAction }}'
+    jobs:
+      - job: TerraformAction
+        displayName: 'Terraform ${{ parameters.terraformAction }}'
+        steps:
+          - checkout: self
+          - script: |
+              git config --global url."https://$(System.AccessToken)@dev.azure.com".insteadOf "https://dev.azure.com"
+            displayName: 'Configure Git Credentials'
+            env:
+              SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          - template: terraform/terraform-dev.yaml@templates
+            parameters:
+              terraformAction: ${{ lower(parameters.terraformAction) }}
+              serviceConnectionName: $(serviceConnectionName)
+              backendResourceGroupName: $(backendResourceGroupName)
+              backendStorageAccountName: $(backendStorageAccountName)
+              backendContainerName: $(backendContainerName)
+              backendKey: terraform.tfstate
+              envTfvars: $(tfvars)
+              globalTfvars: $(globalTfvars)
+              additionalCommandOptions: ${{ parameters.additionalTfVars }}
+              environmentVariables:
+                PORKBUN_API_KEY: $(PORKBUN_API_KEY)
+                PORKBUN_SECRET_API_KEY: $(PORKBUN_SECRET_API_KEY)

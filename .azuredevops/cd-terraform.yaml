@@ -1,0 +1,139 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    exclude:
+      - '**/README.md'
+
+pr: none
+
+resources:
+  repositories:
+    - repository: templates
+      type: github
+      name: liam-goodchild/pipeline-engineering-templates
+      endpoint: liam-goodchild
+      ref: refs/heads/main
+
+pool:
+  vmImage: ubuntu-latest
+
+parameters:
+  - name: environment
+    displayName: Environment
+    type: string
+    default: Prod
+  - name: additionalTfVars
+    displayName: Additional Terraform Variables
+    type: string
+    default: ' '
+  - name: enableVersioning
+    displayName: Enable Git Versioning
+    type: boolean
+    default: true
+
+variables:
+  # API Keys
+  - group: porkbun-secrets
+  # Container, Service Connection & tfvars
+  - name: backendContainerName
+    value: infra-landingzone-platform
+  - name: serviceConnectionName
+    value: sc-platform
+  - name: globalTfvars
+    value: infra/vars/globals.tfvars
+  - name: tfvars
+    value: infra/vars/uks/$(environmentCode).tfvars
+  # State Management
+  - ${{ if eq(parameters.environment, 'Prod') }}:
+      - name: backendResourceGroupName
+        value: rg-terrastate-prd-uks-01
+      - name: backendStorageAccountName
+        value: stterrastateprduks01
+      - name: environmentCode
+        value: prd
+  - ${{ else }}:
+      - name: backendResourceGroupName
+        value: rg-terrastate-prd-uks-01
+      - name: backendStorageAccountName
+        value: stterrastateprduks01
+      - name: environmentCode
+        value: dev
+
+stages:
+  # Stage 1: Terraform Plan
+  - stage: Plan
+    displayName: 'Terraform Plan'
+    jobs:
+      - job: TerraformPlan
+        displayName: 'Terraform Plan'
+        steps:
+          - checkout: self
+          - script: |
+              git config --global url."https://$(System.AccessToken)@dev.azure.com".insteadOf "https://dev.azure.com"
+            displayName: 'Configure Git Credentials'
+            env:
+              SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          - template: terraform/terraform-cicd.yaml@templates
+            parameters:
+              terraformAction: plan
+              serviceConnectionName: $(serviceConnectionName)
+              backendResourceGroupName: $(backendResourceGroupName)
+              backendStorageAccountName: $(backendStorageAccountName)
+              backendContainerName: $(backendContainerName)
+              backendKey: terraform.tfstate
+              envTfvars: $(tfvars)
+              globalTfvars: $(globalTfvars)
+              additionalCommandOptions: ${{ parameters.additionalTfVars }}
+              publishPlan: true
+              planArtifactName: 'tfplan-${{ parameters.environment }}'
+              ensureBackendContainer: true
+              environmentVariables:
+                PORKBUN_API_KEY: $(PORKBUN_API_KEY)
+                PORKBUN_SECRET_API_KEY: $(PORKBUN_SECRET_API_KEY)
+
+  # Stage 2: Terraform Apply
+  - stage: Apply
+    displayName: 'Terraform Apply'
+    dependsOn: Plan
+    condition: succeeded()
+    jobs:
+      - job: TerraformApply
+        displayName: 'Terraform Apply'
+        steps:
+          - checkout: self
+          - script: |
+              git config --global url."https://$(System.AccessToken)@dev.azure.com".insteadOf "https://dev.azure.com"
+            displayName: 'Configure Git Credentials'
+            env:
+              SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          - template: terraform/terraform-cicd.yaml@templates
+            parameters:
+              terraformAction: apply
+              serviceConnectionName: $(serviceConnectionName)
+              backendResourceGroupName: $(backendResourceGroupName)
+              backendStorageAccountName: $(backendStorageAccountName)
+              backendContainerName: $(backendContainerName)
+              backendKey: terraform.tfstate
+              envTfvars: $(tfvars)
+              globalTfvars: $(globalTfvars)
+              additionalCommandOptions: ${{ parameters.additionalTfVars }}
+              ensureBackendContainer: false
+              environmentVariables:
+                PORKBUN_API_KEY: $(PORKBUN_API_KEY)
+                PORKBUN_SECRET_API_KEY: $(PORKBUN_SECRET_API_KEY)
+
+  # Stage 3: Git Versioning
+  - stage: Versioning
+    displayName: 'Git Versioning'
+    dependsOn: Apply
+    condition: and(succeeded(), eq('${{ parameters.enableVersioning }}', 'true'))
+    jobs:
+      - job: GitVersioning
+        displayName: 'Create Git Tag'
+        steps:
+          - template: versioning/git-versioning.yaml@templates
+            parameters:
+              defaultAction: patch
+              defaultBranch: main

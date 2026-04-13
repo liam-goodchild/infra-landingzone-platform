@@ -1,0 +1,101 @@
+trigger: none
+pr: none
+
+resources:
+  repositories:
+    - repository: templates
+      type: github
+      name: liam-goodchild/pipeline-engineering-templates
+      endpoint: liam-goodchild
+      ref: refs/heads/main
+
+pool:
+  vmImage: ubuntu-latest
+
+parameters:
+  - name: environment
+    displayName: Environment
+    type: string
+    default: Prod
+  - name: confirmDestroy
+    displayName: 'Type "DESTROY" to confirm'
+    type: string
+    default: ''
+  - name: additionalTfVars
+    displayName: Additional Terraform Variables
+    type: string
+    default: ' '
+
+variables:
+  # API Keys
+  - group: porkbun-secrets
+  # Container, Service Connection & tfvars
+  - name: backendContainerName
+    value: infra-landingzone-platform
+  - name: serviceConnectionName
+    value: sc-platform
+  - name: globalTfvars
+    value: infra/vars/globals.tfvars
+  - name: tfvars
+    value: infra/vars/uks/$(environmentCode).tfvars
+  # State Management
+  - ${{ if eq(parameters.environment, 'Prod') }}:
+      - name: backendResourceGroupName
+        value: rg-terrastate-prd-uks-01
+      - name: backendStorageAccountName
+        value: stterrastateprduks01
+      - name: environmentCode
+        value: prd
+  - ${{ else }}:
+      - name: backendResourceGroupName
+        value: rg-terrastate-prd-uks-01
+      - name: backendStorageAccountName
+        value: stterrastateprduks01
+      - name: environmentCode
+        value: dev
+
+stages:
+  - stage: Validation
+    displayName: 'Validate Destroy Request'
+    jobs:
+      - job: ValidateConfirmation
+        displayName: 'Validate Confirmation'
+        steps:
+          - pwsh: |
+              if ("${{ parameters.confirmDestroy }}" -ne "DESTROY") {
+                Write-Host "##[error]Destroy confirmation failed. You must type 'DESTROY' to confirm."
+                Write-Host "##[error]This is a safety measure to prevent accidental destruction of resources."
+                exit 1
+              }
+              Write-Host "##[section]Destroy confirmation validated."
+            displayName: 'Check Confirmation'
+
+  - stage: Destroy
+    displayName: 'Terraform Destroy'
+    dependsOn: Validation
+    condition: succeeded()
+    jobs:
+      - job: TerraformDestroy
+        displayName: 'Terraform Destroy - ${{ parameters.environment }}'
+        steps:
+          - checkout: self
+          - script: |
+              git config --global url."https://$(System.AccessToken)@dev.azure.com".insteadOf "https://dev.azure.com"
+            displayName: 'Configure Git Credentials'
+            env:
+              SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          - template: terraform/terraform-cicd.yaml@templates
+            parameters:
+              terraformAction: destroy
+              serviceConnectionName: $(serviceConnectionName)
+              backendResourceGroupName: $(backendResourceGroupName)
+              backendStorageAccountName: $(backendStorageAccountName)
+              backendContainerName: $(backendContainerName)
+              backendKey: terraform.tfstate
+              envTfvars: $(tfvars)
+              globalTfvars: $(globalTfvars)
+              additionalCommandOptions: ${{ parameters.additionalTfVars }}
+              ensureBackendContainer: false
+              environmentVariables:
+                PORKBUN_API_KEY: $(PORKBUN_API_KEY)
+                PORKBUN_SECRET_API_KEY: $(PORKBUN_SECRET_API_KEY)
