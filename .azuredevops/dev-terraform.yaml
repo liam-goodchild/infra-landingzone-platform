@@ -35,10 +35,8 @@ variables:
     value: infra-landingzone-platform
   - name: serviceConnectionName
     value: sc-platform
-  - name: globalTfvars
-    value: infra/vars/globals.tfvars
   - name: tfvars
-    value: infra/vars/uks/$(environmentCode).tfvars
+    value: infra/vars/$(environmentCode).tfvars
   # State Management
   - ${{ if eq(parameters.environment, 'Prod') }}:
       - name: backendResourceGroupName
@@ -77,7 +75,6 @@ stages:
               backendContainerName: $(backendContainerName)
               backendKey: terraform.tfstate
               envTfvars: $(tfvars)
-              globalTfvars: $(globalTfvars)
               additionalCommandOptions: ${{ parameters.additionalTfVars }}
               environmentVariables:
                 PORKBUN_API_KEY: $(PORKBUN_API_KEY)

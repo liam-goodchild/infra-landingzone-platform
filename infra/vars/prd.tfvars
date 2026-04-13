@@ -1,17 +1,10 @@
 #########################################
-# Generic
-#########################################
-environment = "prd"
-location    = "uksouth"
-instance    = "01"
-
-#########################################
 # Management Group Subscription Associations
 #########################################
 management_group_subscriptions = {
-  platform = ["<platform-subscription-id>"]
-  personal = ["<personal-subscription-id>"]
-  customer = []
+  platform = ["cefc8742-e1dd-4b24-90a9-07e3d3c80d88"]
+  personal = ["48a8b708-dc42-468f-97bc-fd949c073eb8"]
+  customer = ["1c26c084-763b-4d2d-86aa-af36b444b6bb"]
 }
 
 #########################################

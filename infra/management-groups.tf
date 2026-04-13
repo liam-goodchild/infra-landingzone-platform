@@ -1,18 +1,18 @@
 resource "azurerm_management_group" "platform" {
   display_name               = "Platform"
-  name                       = "${var.project}-platform"
+  name                       = "mg-platform"
   parent_management_group_id = data.azurerm_management_group.root.id
 }
 
 resource "azurerm_management_group" "personal" {
   display_name               = "Personal"
-  name                       = "${var.project}-personal"
+  name                       = "mg-personal"
   parent_management_group_id = data.azurerm_management_group.root.id
 }
 
 resource "azurerm_management_group" "customer" {
   display_name               = "Customer"
-  name                       = "${var.project}-customer"
+  name                       = "mg-customer"
   parent_management_group_id = data.azurerm_management_group.root.id
 }
 

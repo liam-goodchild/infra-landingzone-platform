@@ -1,21 +1,19 @@
 variable "location" {
   type        = string
   description = "Resource location for Azure resources."
+  default     = "uksouth"
 }
 
 variable "instance" {
   type        = string
   description = "Two-digit instance number (e.g. 01)."
+  default     = "01"
 }
 
 variable "environment" {
   type        = string
   description = "Name of Azure environment."
-}
-
-variable "project" {
-  type        = string
-  description = "Project short name."
+  default     = "prd"
 }
 
 variable "virtual_network" {
