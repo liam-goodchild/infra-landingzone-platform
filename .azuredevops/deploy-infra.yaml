@@ -1,5 +1,12 @@
 trigger: none
-pr: none
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    exclude:
+      - '**/README.md'
 
 resources:
   repositories:
@@ -40,8 +47,28 @@ variables:
     value: sttfsplatformprduks01
 
 stages:
+  # Stage 1: Linting (PR only)
+  - stage: Linting
+    displayName: 'Linting & Validation'
+    condition: eq(variables['Build.Reason'], 'PullRequest')
+    jobs:
+      - job: SuperLinter
+        displayName: 'Super-Linter'
+        steps:
+          - template: validation/linting.yaml@templates
+            parameters:
+              prettierConfigFile: .azuredevops/linters/.prettierrc.json
+              checkovConfigFile: .azuredevops/linters/.checkov.yaml
+
+  # Stage 2: Terraform (manual runs only)
   - stage: Terraform
     displayName: 'Terraform ${{ parameters.terraformAction }}'
+    dependsOn: Linting
+    condition: |
+      and(
+        not(failed('Linting')),
+        ne(variables['Build.Reason'], 'PullRequest')
+      )
     jobs:
       - job: TerraformAction
         displayName: 'Terraform ${{ parameters.terraformAction }}'
