@@ -15,5 +15,5 @@ resource "azurerm_dns_zone" "public" {
 resource "porkbun_nameservers" "domain_ns" {
   for_each    = azurerm_dns_zone.public
   domain      = each.key
-  nameservers = each.value.name_servers
+  nameservers = [for ns in each.value.name_servers : trimsuffix(ns, ".")]
 }
