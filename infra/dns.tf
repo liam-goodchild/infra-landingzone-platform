@@ -1,6 +1,7 @@
 resource "azurerm_resource_group" "dns" {
-  name     = "rg-dns-${local.name_suffix}"
+  name     = "rg-dns-${local.resource_suffix}"
   location = var.location
+  tags     = local.tags
 }
 
 resource "azurerm_dns_zone" "public" {
@@ -8,6 +9,7 @@ resource "azurerm_dns_zone" "public" {
 
   name                = each.value.name
   resource_group_name = azurerm_resource_group.dns.name
+  tags                = local.tags
 }
 
 resource "porkbun_nameservers" "domain_ns" {

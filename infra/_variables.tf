@@ -1,7 +1,18 @@
+variable "workload" {
+  type        = string
+  description = "Workload or platform layer name used in resource naming."
+}
+
 variable "location" {
   type        = string
   description = "Resource location for Azure resources."
   default     = "uksouth"
+}
+
+variable "location_short" {
+  type        = string
+  description = "Short Azure region code (e.g. uks, ukw)."
+  default     = "uks"
 }
 
 variable "instance" {
@@ -19,10 +30,8 @@ variable "environment" {
 variable "virtual_network" {
   description = "Virtual Network configuration."
   type = object({
-    address_space                = string
-    dns_servers                  = list(string)
-    hub_vnet_name                = optional(string)
-    hub_vnet_resource_group_name = optional(string)
+    address_space = string
+    dns_servers   = list(string)
   })
 }
 
@@ -83,4 +92,9 @@ variable "dns_zones" {
   type = list(object({
     name = string
   }))
+}
+
+variable "budget_contact_emails" {
+  description = "Email addresses to notify for budget alerts."
+  type        = list(string)
 }

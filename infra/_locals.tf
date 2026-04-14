@@ -1,10 +1,14 @@
 locals {
-  locations = {
-    uksouth = "uks"
-    ukwest  = "ukw"
-  }
-  location_short = local.locations[var.location]
+  resource_suffix      = "${var.workload}-${var.environment}-${var.location_short}-${var.instance}"
+  resource_suffix_flat = "${var.workload}${var.environment}${var.location_short}${var.instance}"
 
-  name_suffix = "${var.environment}-${local.location_short}-${var.instance}"
-  name_flat   = "${var.environment}${local.location_short}${var.instance}"
+  all_subscription_ids = toset(concat(
+    var.management_group_subscriptions.platform,
+    var.management_group_subscriptions.personal,
+    var.management_group_subscriptions.customer
+  ))
+
+  tags = {
+    managed-by = "terraform"
+  }
 }

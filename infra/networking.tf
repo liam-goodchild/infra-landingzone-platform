@@ -1,20 +1,22 @@
 resource "azurerm_resource_group" "networking" {
-  name     = "rg-netw-${local.name_suffix}"
+  name     = "rg-netw-${local.resource_suffix}"
   location = var.location
+  tags     = local.tags
 }
 
 resource "azurerm_virtual_network" "main" {
-  name                = "vnet-${local.name_suffix}"
+  name                = "vnet-${local.resource_suffix}"
   resource_group_name = azurerm_resource_group.networking.name
   location            = azurerm_resource_group.networking.location
   address_space       = [var.virtual_network.address_space]
   dns_servers         = var.virtual_network.dns_servers
+  tags                = local.tags
 }
 
 resource "azurerm_subnet" "main" {
   for_each = { for subnet in var.subnets : subnet.name => subnet }
 
-  name                 = "snet-${each.key}-${local.name_suffix}"
+  name                 = "snet-${each.key}-${local.resource_suffix}"
   resource_group_name  = azurerm_resource_group.networking.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = each.value.address_prefixes
@@ -35,9 +37,10 @@ resource "azurerm_subnet" "main" {
 resource "azurerm_network_security_group" "main" {
   for_each = { for subnet in var.subnets : subnet.name => subnet if subnet.network_security_group_enabled }
 
-  name                = "nsg-${each.key}-${local.name_suffix}"
+  name                = "nsg-${each.key}-${local.resource_suffix}"
   resource_group_name = azurerm_resource_group.networking.name
   location            = azurerm_resource_group.networking.location
+  tags                = local.tags
 
   dynamic "security_rule" {
     for_each = each.value.nsg_rules
@@ -70,9 +73,10 @@ resource "azurerm_subnet_network_security_group_association" "main" {
 resource "azurerm_route_table" "main" {
   for_each = { for subnet in var.subnets : subnet.name => subnet if subnet.create_route_table }
 
-  name                = "rt-${each.key}-${local.name_suffix}"
+  name                = "rt-${each.key}-${local.resource_suffix}"
   resource_group_name = azurerm_resource_group.networking.name
   location            = azurerm_resource_group.networking.location
+  tags                = local.tags
 }
 
 resource "azurerm_route" "main" {
@@ -106,7 +110,8 @@ resource "azurerm_subnet_route_table_association" "main" {
 }
 
 resource "azurerm_network_watcher" "main" {
-  name                = "nw-${local.name_suffix}"
+  name                = "nw-${local.resource_suffix}"
   resource_group_name = azurerm_resource_group.networking.name
   location            = azurerm_resource_group.networking.location
+  tags                = local.tags
 }
