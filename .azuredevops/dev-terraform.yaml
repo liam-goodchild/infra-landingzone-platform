@@ -18,18 +18,12 @@ parameters:
     type: string
     default: Plan
     values: [Plan, Apply, Destroy]
-  - name: environment
-    displayName: Environment
-    type: string
-    values: [Dev, Prod]
   - name: additionalTfVars
     displayName: Additional Terraform Variables
     type: string
     default: ' '
 
 variables:
-  # API Keys
-  - group: porkbun-secrets
   # Container, Service Connection & tfvars
   - name: backendContainerName
     value: infra-landingzone-platform
@@ -38,22 +32,12 @@ variables:
   - name: globalTfvars
     value: infra/vars/globals.tfvars
   - name: tfvars
-    value: infra/vars/$(environmentCode).tfvars
+    value: infra/vars/prd.tfvars
   # State Management
-  - ${{ if eq(parameters.environment, 'Prod') }}:
-      - name: backendResourceGroupName
-        value: rg-terrastate-prd-uks-01
-      - name: backendStorageAccountName
-        value: stterrastateprduks01
-      - name: environmentCode
-        value: prd
-  - ${{ else }}:
-      - name: backendResourceGroupName
-        value: rg-terrastate-prd-uks-01
-      - name: backendStorageAccountName
-        value: stterrastateprduks01
-      - name: environmentCode
-        value: dev
+  - name: backendResourceGroupName
+    value: rg-tfs-platform-prd-uks-01
+  - name: backendStorageAccountName
+    value: sttfsplatformprduks01
 
 stages:
   - stage: Terraform
@@ -68,6 +52,13 @@ stages:
             displayName: 'Configure Git Credentials'
             env:
               SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          - task: AzureKeyVault@2
+            displayName: 'Fetch Porkbun Secrets'
+            inputs:
+              azureSubscription: $(serviceConnectionName)
+              KeyVaultName: kv-platform-prd-uks-01
+              SecretsFilter: 'porkbun-api-key,porkbun-secret-api-key'
+              RunAsPreJob: false
           - template: terraform/terraform-dev.yaml@templates
             parameters:
               terraformAction: ${{ lower(parameters.terraformAction) }}
@@ -80,5 +71,5 @@ stages:
               globalTfvars: $(globalTfvars)
               additionalCommandOptions: ${{ parameters.additionalTfVars }}
               environmentVariables:
-                PORKBUN_API_KEY: $(PORKBUN_API_KEY)
-                PORKBUN_SECRET_API_KEY: $(PORKBUN_SECRET_API_KEY)
+                PORKBUN_API_KEY: $(porkbun-api-key)
+                PORKBUN_SECRET_API_KEY: $(porkbun-secret-api-key)
