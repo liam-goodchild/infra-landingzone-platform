@@ -31,4 +31,6 @@ stages:
           - template: linting/super-linter.yaml@templates
             parameters:
               prettierConfigFile: .prettierrc.json
+              prettierIgnoreFile: .prettierignore
               checkovConfigFile: .checkov.yaml
+              tflintConfigFile: .tflint.hcl

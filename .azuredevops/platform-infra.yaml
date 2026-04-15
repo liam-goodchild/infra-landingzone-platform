@@ -48,6 +48,13 @@ stages:
         displayName: 'Terraform ${{ parameters.terraformAction }}'
         steps:
           - checkout: self
+          - task: AzureKeyVault@2
+            displayName: 'Fetch Porkbun Secrets'
+            inputs:
+              azureSubscription: $(serviceConnectionName)
+              KeyVaultName: kv-platform-prd-uks-01
+              SecretsFilter: 'porkbun-api-key,porkbun-secret-api-key'
+              RunAsPreJob: false
           - template: terraform/action.yaml@templates
             parameters:
               terraformAction: ${{ lower(parameters.terraformAction) }}
@@ -59,3 +66,6 @@ stages:
               envTfvars: $(tfvars)
               globalTfvars: $(globalTfvars)
               whitelistAgentIp: true
+              environmentVariables:
+                PORKBUN_API_KEY: $(porkbun-api-key)
+                PORKBUN_SECRET_API_KEY: $(porkbun-secret-api-key)
