@@ -9,7 +9,7 @@ resources:
       type: github
       name: liam-goodchild/pipeline-engineering-templates
       endpoint: liam-goodchild
-      ref: refs/heads/major/pipeline-reworks
+      ref: refs/heads/main
 
 pool:
   vmImage: ubuntu-latest
