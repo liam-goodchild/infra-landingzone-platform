@@ -66,6 +66,7 @@ stages:
               envTfvars: $(tfvars)
               globalTfvars: $(globalTfvars)
               whitelistAgentIp: false
+              ensureBackendContainer: false
               environmentVariables:
                 PORKBUN_API_KEY: $(porkbun-api-key)
                 PORKBUN_SECRET_API_KEY: $(porkbun-secret-api-key)
