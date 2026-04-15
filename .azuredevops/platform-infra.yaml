@@ -65,7 +65,7 @@ stages:
               backendKey: terraform.tfstate
               envTfvars: $(tfvars)
               globalTfvars: $(globalTfvars)
-              whitelistAgentIp: true
+              whitelistAgentIp: false
               environmentVariables:
                 PORKBUN_API_KEY: $(porkbun-api-key)
                 PORKBUN_SECRET_API_KEY: $(porkbun-secret-api-key)

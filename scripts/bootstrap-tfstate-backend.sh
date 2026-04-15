@@ -74,6 +74,7 @@ for ENV in "${ENVIRONMENTS[@]}"; do
     --name "$ST_NAME" \
     --resource-group "$RG_NAME" \
     --tags managed-by="azure cli" \
+    --public-network-access Enabled \
     --subscription "$SUBSCRIPTION" \
     --output none
 
