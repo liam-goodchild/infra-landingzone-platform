@@ -118,9 +118,9 @@ for SCOPE in "${SCOPES[@]}"; do
       --output none
   fi
 
-  # Storage Blob Data Contributor on both tfstate storage accounts
+  # Storage Account Contributor on both tfstate storage accounts
   # Required for Terraform to read/write state files via azurerm backend
-  TFSTATE_ROLE="Storage Blob Data Contributor"
+  TFSTATE_ROLE="Storage Account Contributor"
   TFSTATE_SUB="cefc8742-e1dd-4b24-90a9-07e3d3c80d88"
   TFSTATE_STORAGE_ACCOUNTS=(
     "rg-tfs-platform-prd-uks-01/sttfsplatformprduks01"
