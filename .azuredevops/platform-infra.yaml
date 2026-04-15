@@ -18,8 +18,8 @@ parameters:
   - name: environment
     displayName: Environment
     type: string
-    default: dev
-    values: [dev, prd]
+    default: Dev
+    values: [Dev, Prd]
   - name: terraformAction
     displayName: Terraform Action
     type: string
@@ -34,11 +34,11 @@ variables:
   - name: globalTfvars
     value: infra/vars/globals.tfvars
   - name: tfvars
-    value: infra/vars/${{ parameters.environment }}.tfvars
+    value: infra/vars/${{ lower(parameters.environment) }}.tfvars
   - name: backendResourceGroupName
-    value: rg-tfs-platform-${{ parameters.environment }}-uks-01
+    value: rg-tfs-platform-${{ lower(parameters.environment) }}-uks-01
   - name: backendStorageAccountName
-    value: sttfsplatform${{ parameters.environment }}uks01
+    value: sttfsplatform${{ lower(parameters.environment) }}uks01
 
 stages:
   - stage: Terraform
