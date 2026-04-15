@@ -58,6 +58,7 @@ Azure Storage with azurerm backend. Resource group `rg-tfs-platform-prd-uks-01`,
 ### Tfvars layout
 
 Flat structure under `infra/vars/`:
+
 - `globals.tfvars` — empty (reserved for cross-env shared values)
 - `prd.tfvars` — production values (subscriptions, networking, DNS, budgets)
 
@@ -70,13 +71,13 @@ Both pipelines use shared templates from `liam-goodchild/pipeline-engineering-te
 
 ### Resource domains
 
-| File | What it manages |
-|------|----------------|
-| `management-groups.tf` | Three MGs (Platform, Personal, Customer) under tenant root + subscription associations |
-| `networking.tf` | Hub VNet, subnets (data-driven from `var.subnets`), NSGs, route tables, network watcher |
-| `dns.tf` | Azure public DNS zones + Porkbun NS delegation |
-| `key-vault.tf` | Key Vault with RBAC authorization + Key Vault Administrator role for deploying identity |
-| `budgets.tf` | £2/mo consumption budget per subscription with email alerts |
+| File                   | What it manages                                                                         |
+| ---------------------- | --------------------------------------------------------------------------------------- |
+| `management-groups.tf` | Three MGs (Platform, Personal, Customer) under tenant root + subscription associations  |
+| `networking.tf`        | Hub VNet, subnets (data-driven from `var.subnets`), NSGs, route tables, network watcher |
+| `dns.tf`               | Azure public DNS zones + Porkbun NS delegation                                          |
+| `key-vault.tf`         | Key Vault with RBAC authorization + Key Vault Administrator role for deploying identity |
+| `budgets.tf`           | £2/mo consumption budget per subscription with email alerts                             |
 
 ### Deployment identity model
 

@@ -38,17 +38,17 @@ infra/
 
 ### Required Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `workload` | Workload or platform layer name | `platform` |
-| `environment` | Environment token | `prd` |
-| `location` | Azure region | `uksouth` |
-| `instance` | Two-digit instance number | `01` |
-| `virtual_network` | VNet address space and DNS servers | see tfvars |
-| `subnets` | Subnet definitions with NSG and route table options | see tfvars |
-| `dns_zones` | Public DNS zones to create | `[{ name = "skyhaven.ltd" }]` |
-| `management_group_subscriptions` | Subscription IDs per management group | see tfvars |
-| `budget_contact_emails` | Email addresses for budget alerts | see tfvars |
+| Variable                         | Description                                         | Example                       |
+| -------------------------------- | --------------------------------------------------- | ----------------------------- |
+| `workload`                       | Workload or platform layer name                     | `platform`                    |
+| `environment`                    | Environment token                                   | `prd`                         |
+| `location`                       | Azure region                                        | `uksouth`                     |
+| `instance`                       | Two-digit instance number                           | `01`                          |
+| `virtual_network`                | VNet address space and DNS servers                  | see tfvars                    |
+| `subnets`                        | Subnet definitions with NSG and route table options | see tfvars                    |
+| `dns_zones`                      | Public DNS zones to create                          | `[{ name = "skyhaven.ltd" }]` |
+| `management_group_subscriptions` | Subscription IDs per management group               | see tfvars                    |
+| `budget_contact_emails`          | Email addresses for budget alerts                   | see tfvars                    |
 
 ### Naming Convention
 
@@ -56,10 +56,10 @@ Resources follow the pattern `{type}-{workload}-{env}-{region}-{index}`, compute
 
 ### Providers
 
-| Provider | Purpose |
-|----------|---------|
-| `hashicorp/azurerm` `~> 4.68` | Azure infrastructure |
-| `kyswtn/porkbun` `~> 0.1.3` | DNS nameserver delegation at Porkbun registrar |
+| Provider                      | Purpose                                        |
+| ----------------------------- | ---------------------------------------------- |
+| `hashicorp/azurerm` `~> 4.68` | Azure infrastructure                           |
+| `kyswtn/porkbun` `~> 0.1.3`   | DNS nameserver delegation at Porkbun registrar |
 
 ## Terraform Docs
 
