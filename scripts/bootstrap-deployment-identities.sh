@@ -118,6 +118,50 @@ for SCOPE in "${SCOPES[@]}"; do
       --output none
   fi
 
+  # Storage Blob Data Contributor on both tfstate storage accounts
+  # Required for Terraform to read/write state files via azurerm backend
+  TFSTATE_ROLE="Storage Blob Data Contributor"
+  TFSTATE_SUB="cefc8742-e1dd-4b24-90a9-07e3d3c80d88"
+  TFSTATE_STORAGE_ACCOUNTS=(
+    "rg-tfs-platform-prd-uks-01/sttfsplatformprduks01"
+    "rg-tfs-platform-dev-uks-01/sttfsplatformdevuks01"
+  )
+
+  for SA_ENTRY in "${TFSTATE_STORAGE_ACCOUNTS[@]}"; do
+    SA_RG="${SA_ENTRY%%/*}"
+    SA_NAME="${SA_ENTRY##*/}"
+    SA_SCOPE="subscriptions/${TFSTATE_SUB}/resourceGroups/${SA_RG}/providers/Microsoft.Storage/storageAccounts/${SA_NAME}"
+
+    echo "Assigning ${TFSTATE_ROLE} on ${SA_NAME}..."
+
+    SA_ROLE_DEF_ID=$(az rest \
+      --method GET \
+      --uri "https://management.azure.com/${SA_SCOPE}/providers/Microsoft.Authorization/roleDefinitions?api-version=2022-04-01&\$filter=roleName eq '${TFSTATE_ROLE}'" \
+      --query "value[0].id" -o tsv)
+
+    SA_EXISTING=$(az rest \
+      --method GET \
+      --uri "https://management.azure.com/${SA_SCOPE}/providers/Microsoft.Authorization/roleAssignments?api-version=2022-04-01&\$filter=principalId eq '${SP_OBJ_ID}'" \
+      --query "value[?properties.roleDefinitionId=='${SA_ROLE_DEF_ID}'] | [0].id" -o tsv 2>/dev/null)
+
+    if [[ -n "$SA_EXISTING" && "$SA_EXISTING" != "None" ]]; then
+      echo "Role assignment already exists on ${SA_NAME}, skipping."
+    else
+      SA_ASSIGNMENT_GUID=$(powershell -Command "[guid]::NewGuid().ToString()" 2>/dev/null || cat /proc/sys/kernel/random/uuid)
+      az rest \
+        --method PUT \
+        --uri "https://management.azure.com/${SA_SCOPE}/providers/Microsoft.Authorization/roleAssignments/${SA_ASSIGNMENT_GUID}?api-version=2022-04-01" \
+        --body "{
+          \"properties\": {
+            \"roleDefinitionId\": \"${SA_ROLE_DEF_ID}\",
+            \"principalId\": \"${SP_OBJ_ID}\",
+            \"principalType\": \"ServicePrincipal\"
+          }
+        }" \
+        --output none
+    fi
+  done
+
   # ADO service connection — WorkloadIdentityFederation scheme
   # Note: az rest fails on Windows due to cp1252 encoding; az devops extension handles auth correctly
   echo "Creating ADO service connection..."
