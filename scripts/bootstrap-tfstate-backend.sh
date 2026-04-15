@@ -2,26 +2,26 @@
 set -euo pipefail
 
 ###############################################################################
-# create-tfstate-resources.sh
+# bootstrap-tfstate-backend.sh
 #
 # Creates resource groups and storage accounts for Terraform remote state.
 # These resources are intentionally not managed by Terraform (bootstrap).
 #
-# Naming schema: {type}-{workload}-{env}-{region}-{index}
+# Naming schema: {type}-{qualifier}-{workload}-{env}-{region}-{index}
 ###############################################################################
 
 SUBSCRIPTION="cefc8742-e1dd-4b24-90a9-07e3d3c80d88"
-WORKLOAD="terrastate"
+QUALIFIER="tfs"
+WORKLOAD="platform"
 LOCATION="uksouth"
 LOCATION_SHORT="uks"
 INSTANCE="01"
-CONTAINER_NAME="tfstate"
 
 ENVIRONMENTS=("prd" "dev")
 
 for ENV in "${ENVIRONMENTS[@]}"; do
-  RG_NAME="rg-${WORKLOAD}-${ENV}-${LOCATION_SHORT}-${INSTANCE}"
-  ST_NAME="st${WORKLOAD}${ENV}${LOCATION_SHORT}${INSTANCE}"
+  RG_NAME="rg-${QUALIFIER}-${WORKLOAD}-${ENV}-${LOCATION_SHORT}-${INSTANCE}"
+  ST_NAME="st${QUALIFIER}${WORKLOAD}${ENV}${LOCATION_SHORT}${INSTANCE}"
 
   echo "=== ${ENV} ==="
   echo "Resource group:  ${RG_NAME}"
@@ -33,20 +33,48 @@ for ENV in "${ENVIRONMENTS[@]}"; do
   az group create \
     --name "$RG_NAME" \
     --location "$LOCATION" \
+    --tags managed-by="azure cli" \
+    --subscription "$SUBSCRIPTION" \
+    --output none
+
+  # Delete lock
+  echo "Applying delete lock to ${RG_NAME}..."
+  az lock create \
+    --name "delete-lock" \
+    --lock-type CanNotDelete \
+    --resource-group "$RG_NAME" \
     --subscription "$SUBSCRIPTION" \
     --output none
 
   # Storage account
-  echo "Creating storage account ${ST_NAME}..."
-  az storage account create \
+  if az storage account show \
+      --name "$ST_NAME" \
+      --resource-group "$RG_NAME" \
+      --subscription "$SUBSCRIPTION" \
+      --output none 2>/dev/null; then
+    echo "Storage account ${ST_NAME} already exists, skipping creation."
+  else
+    echo "Creating storage account ${ST_NAME}..."
+    az storage account create \
+      --name "$ST_NAME" \
+      --resource-group "$RG_NAME" \
+      --location "$LOCATION" \
+      --sku Standard_LRS \
+      --kind StorageV2 \
+      --min-tls-version TLS1_2 \
+      --allow-blob-public-access false \
+      --https-only true \
+      --subscription "$SUBSCRIPTION" \
+      --output none
+  fi
+
+  # Tags
+  echo "Applying tags to ${ST_NAME}..."
+  az storage account update \
     --name "$ST_NAME" \
     --resource-group "$RG_NAME" \
-    --location "$LOCATION" \
-    --sku Standard_LRS \
-    --kind StorageV2 \
-    --min-tls-version TLS1_2 \
-    --allow-blob-public-access false \
-    --https-only true \
+    --tags managed-by="azure cli" \
+    --public-network-access Enabled \
     --subscription "$SUBSCRIPTION" \
     --output none
 
@@ -63,15 +91,6 @@ for ENV in "${ENVIRONMENTS[@]}"; do
     --subscription "$SUBSCRIPTION" \
     --output none
 
-  # State container
-  echo "Creating blob container ${CONTAINER_NAME}..."
-  az storage container create \
-    --name "$CONTAINER_NAME" \
-    --account-name "$ST_NAME" \
-    --auth-mode login \
-    --subscription "$SUBSCRIPTION" \
-    --output none
-
   echo "Done."
   echo ""
 done
@@ -81,14 +100,14 @@ echo ""
 echo "Terraform backend configuration:"
 echo ""
 for ENV in "${ENVIRONMENTS[@]}"; do
-  ST_NAME="st${WORKLOAD}${ENV}${LOCATION_SHORT}${INSTANCE}"
-  RG_NAME="rg-${WORKLOAD}-${ENV}-${LOCATION_SHORT}-${INSTANCE}"
+  ST_NAME="st${QUALIFIER}${WORKLOAD}${ENV}${LOCATION_SHORT}${INSTANCE}"
+  RG_NAME="rg-${QUALIFIER}-${WORKLOAD}-${ENV}-${LOCATION_SHORT}-${INSTANCE}"
   cat <<EOF
   # ${ENV}
   backend "azurerm" {
     resource_group_name  = "${RG_NAME}"
     storage_account_name = "${ST_NAME}"
-    container_name       = "${CONTAINER_NAME}"
+    container_name       = "<container>"
     key                  = "<stack>.tfstate"
   }
 

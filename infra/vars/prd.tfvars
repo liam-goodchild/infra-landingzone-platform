@@ -1,4 +1,9 @@
 #########################################
+# Naming
+#########################################
+workload = "platform"
+
+#########################################
 # Management Group Subscription Associations
 #########################################
 management_group_subscriptions = {
@@ -6,6 +11,12 @@ management_group_subscriptions = {
   personal = ["48a8b708-dc42-468f-97bc-fd949c073eb8"]
   customer = ["1c26c084-763b-4d2d-86aa-af36b444b6bb"]
 }
+
+#########################################
+# Subscription Budgets
+#########################################
+
+budget_contact_emails = ["liamgoodchild12@hotmail.co.uk"]
 
 #########################################
 # Networking

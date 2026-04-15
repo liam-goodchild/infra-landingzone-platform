@@ -32,6 +32,13 @@ declare -A SUBSCRIPTION_NAMES=(
   ["customer"]="Customer Subscription"
 )
 
+# "managementgroup" = tenant root group (TENANT_ID); "subscription" = subscription scope
+declare -A ROLE_ASSIGNMENT_SCOPES=(
+  ["platform"]="managementgroup"
+  ["personal"]="subscription"
+  ["customer"]="subscription"
+)
+
 SCOPES=("platform" "personal" "customer")
 
 ###############################################################################
@@ -71,25 +78,36 @@ for SCOPE in "${SCOPES[@]}"; do
     echo "Service principal already exists, skipping."
   fi
 
-  # Role assignment on the target subscription
+  # Role assignment — scope varies per identity:
+  #   managementgroup → tenant root group (landing zone deployments require this)
+  #   subscription    → subscription scope
   # Note: az role assignment create --scope is broken on some CLI builds; use REST directly
-  echo "Assigning ${ROLE} on subscription..."
   SP_OBJ_ID=$(az ad sp show --id "$APP_ID" --query id -o tsv)
+  if [[ "${ROLE_ASSIGNMENT_SCOPES[$SCOPE]}" == "managementgroup" ]]; then
+    ARM_SCOPE="providers/Microsoft.Management/managementGroups/${TENANT_ID}"
+    echo "Assigning ${ROLE} on tenant root management group..."
+  else
+    ARM_SCOPE="subscriptions/${SUB_ID}"
+    echo "Assigning ${ROLE} on subscription..."
+  fi
+
+  ROLE_DEF_ID=$(az rest \
+    --method GET \
+    --uri "https://management.azure.com/${ARM_SCOPE}/providers/Microsoft.Authorization/roleDefinitions?api-version=2022-04-01&\$filter=roleName eq '${ROLE}'" \
+    --query "value[0].id" -o tsv)
+
+  # Check for existing assignment at the correct scope AND role — not just any assignment
   EXISTING_ASSIGNMENT=$(az rest \
     --method GET \
-    --uri "https://management.azure.com/subscriptions/${SUB_ID}/providers/Microsoft.Authorization/roleAssignments?api-version=2022-04-01&\$filter=principalId eq '${SP_OBJ_ID}'" \
-    --query "value[0].id" -o tsv 2>/dev/null)
+    --uri "https://management.azure.com/${ARM_SCOPE}/providers/Microsoft.Authorization/roleAssignments?api-version=2022-04-01&\$filter=principalId eq '${SP_OBJ_ID}'" \
+    --query "value[?properties.roleDefinitionId=='${ROLE_DEF_ID}'] | [0].id" -o tsv 2>/dev/null)
   if [[ -n "$EXISTING_ASSIGNMENT" && "$EXISTING_ASSIGNMENT" != "None" ]]; then
     echo "Role assignment already exists, skipping."
   else
-    ROLE_DEF_ID=$(az rest \
-      --method GET \
-      --uri "https://management.azure.com/subscriptions/${SUB_ID}/providers/Microsoft.Authorization/roleDefinitions?api-version=2022-04-01&\$filter=roleName eq '${ROLE}'" \
-      --query "value[0].id" -o tsv)
     ASSIGNMENT_GUID=$(powershell -Command "[guid]::NewGuid().ToString()" 2>/dev/null || cat /proc/sys/kernel/random/uuid)
     az rest \
       --method PUT \
-      --uri "https://management.azure.com/subscriptions/${SUB_ID}/providers/Microsoft.Authorization/roleAssignments/${ASSIGNMENT_GUID}?api-version=2022-04-01" \
+      --uri "https://management.azure.com/${ARM_SCOPE}/providers/Microsoft.Authorization/roleAssignments/${ASSIGNMENT_GUID}?api-version=2022-04-01" \
       --body "{
         \"properties\": {
           \"roleDefinitionId\": \"${ROLE_DEF_ID}\",

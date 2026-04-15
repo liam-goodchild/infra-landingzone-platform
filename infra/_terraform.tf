@@ -1,16 +1,16 @@
 terraform {
-  required_version = ">= 1.0, < 2.0"
+  required_version = "~> 1.14.8"
 
   backend "azurerm" {}
 
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = ">= 4.0, < 5.0"
+      version = "~> 4.68.0"
     }
     porkbun = {
       source  = "kyswtn/porkbun"
-      version = ">= 0.1.1"
+      version = "~> 0.1.3"
     }
   }
 }

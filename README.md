@@ -1,63 +1,88 @@
 # infra-landingzone-platform
 
-Terraform root module that provisions the platform layer of the Sky Haven Azure landing zone — management group hierarchy, hub networking, and public DNS.
+Terraform root module that provisions the platform layer of the Sky Haven Azure landing zone — management group hierarchy, hub networking, public DNS, Key Vault, and per-subscription consumption budgets.
 
 ## Usage
 
-```bash
-terraform init \
-  -backend-config="resource_group_name=<tfstate-rg>" \
-  -backend-config="storage_account_name=<tfstate-st>" \
-  -backend-config="container_name=tfstate" \
-  -backend-config="key=landingzone-platform.tfstate"
+Prerequisites: `az login`, `PORKBUN_API_KEY` and `PORKBUN_SECRET_API_KEY` exported.
 
-terraform plan  -var-file="vars/globals.tfvars" -var-file="vars/uks/prd.tfvars"
-terraform apply -var-file="vars/globals.tfvars" -var-file="vars/uks/prd.tfvars"
+```bash
+cd infra
+
+terraform init \
+  -backend-config="resource_group_name=rg-tfs-platform-prd-uks-01" \
+  -backend-config="storage_account_name=sttfsplatformprduks01" \
+  -backend-config="container_name=infra-landingzone-platform" \
+  -backend-config="key=terraform.tfstate"
+
+terraform plan  -var-file=vars/prd.tfvars
+terraform apply -var-file=vars/prd.tfvars
 ```
 
 ## Structure
 
 ```
 infra/
-├── _terraform.tf      # Required providers and backend
-├── _providers.tf      # Provider configuration
-├── _variables.tf      # Input variable declarations
-├── _locals.tf         # Naming locals (name_suffix, name_flat)
-├── _data.tf           # Data sources
+├── _terraform.tf         # Required providers and backend
+├── _providers.tf         # Provider configuration
+├── _variables.tf         # Input variable declarations
+├── _locals.tf            # Naming locals (resource_suffix, resource_suffix_flat)
+├── _data.tf              # Data sources
 ├── management-groups.tf  # Management group hierarchy and subscription associations
 ├── networking.tf         # Hub VNet, subnets, NSGs, route tables, network watcher
 ├── dns.tf                # Public DNS zones and Porkbun nameserver delegation
+├── key-vault.tf          # Key Vault with RBAC authorization
+├── budgets.tf            # Per-subscription consumption budgets
 └── vars/
-    ├── globals.tfvars        # Shared variables (project)
-    └── uks/
-        └── prd.tfvars        # UK South production values
+    ├── globals.tfvars    # Shared variables (reserved)
+    └── prd.tfvars        # Production values
 ```
 
 ## Configuration
 
 ### Required Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `project` | Project short name | `sh` |
-| `environment` | Environment token | `prd` |
-| `location` | Azure region | `uksouth` |
-| `instance` | Two-digit instance number | `01` |
-| `virtual_network` | VNet address space and DNS servers | see tfvars |
-| `subnets` | Subnet definitions with NSG and route table options | see tfvars |
-| `dns_zones` | Public DNS zones to create | `[{ name = "skyhaven.ltd" }]` |
-| `management_group_subscriptions` | Subscription IDs per management group | see tfvars |
+| Variable                         | Description                                         | Example                       |
+| -------------------------------- | --------------------------------------------------- | ----------------------------- |
+| `workload`                       | Workload or platform layer name                     | `platform`                    |
+| `environment`                    | Environment token                                   | `prd`                         |
+| `location`                       | Azure region                                        | `uksouth`                     |
+| `instance`                       | Two-digit instance number                           | `01`                          |
+| `virtual_network`                | VNet address space and DNS servers                  | see tfvars                    |
+| `subnets`                        | Subnet definitions with NSG and route table options | see tfvars                    |
+| `dns_zones`                      | Public DNS zones to create                          | `[{ name = "skyhaven.ltd" }]` |
+| `management_group_subscriptions` | Subscription IDs per management group               | see tfvars                    |
+| `budget_contact_emails`          | Email addresses for budget alerts                   | see tfvars                    |
 
 ### Naming Convention
 
-Resources follow the pattern `{type}-{project}-{environment}-{region}-{instance}`, computed from `local.name_suffix`. Resources that prohibit hyphens (storage accounts, container registries) use `local.name_flat`.
+Resources follow the pattern `{type}-{workload}-{env}-{region}-{index}`, computed from `local.resource_suffix`. Resources that prohibit hyphens (e.g. storage accounts) use `local.resource_suffix_flat`.
 
 ### Providers
 
-| Provider | Purpose |
-|----------|---------|
-| `hashicorp/azurerm` `>= 4.0, < 5.0` | Azure infrastructure |
-| `kyswtn/porkbun` `>= 0.1.1` | DNS nameserver delegation at Porkbun registrar |
+| Provider                      | Purpose                                        |
+| ----------------------------- | ---------------------------------------------- |
+| `hashicorp/azurerm` `~> 4.68` | Azure infrastructure                           |
+| `kyswtn/porkbun` `~> 0.1.3`   | DNS nameserver delegation at Porkbun registrar |
+
+## CI/CD
+
+Pipelines are in `.azuredevops/` and use shared templates from [`liam-goodchild/pipeline-engineering-templates`](https://github.com/liam-goodchild/pipeline-engineering-templates).
+
+| Pipeline              | Trigger      | Purpose                                           |
+| --------------------- | ------------ | ------------------------------------------------- |
+| `platform-ci.yaml`    | PR to `main` | Lint (Super-Linter) and terraform-docs generation |
+| `platform-cd.yaml`    | Manual       | Terraform plan/apply/destroy for prd              |
+| `platform-infra.yaml` | Manual       | Infrastructure deployment with Key Vault secrets  |
+
+Porkbun secrets are fetched from Key Vault (`kv-platform-prd-uks-01`) via `AzureKeyVault@2` task. Service connection: `sc-platform`.
+
+## Bootstrap Scripts
+
+One-time scripts not managed by Terraform:
+
+- `scripts/bootstrap-tfstate-backend.sh` — creates resource groups and storage accounts for Terraform remote state
+- `scripts/bootstrap-deployment-identities.sh` — creates OIDC service principals and ADO service connections
 
 ## Terraform Docs
 
