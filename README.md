@@ -4,7 +4,11 @@ Terraform root module that provisions the platform layer of the Sky Haven Azure 
 
 ## Usage
 
+Prerequisites: `az login`, `PORKBUN_API_KEY` and `PORKBUN_SECRET_API_KEY` exported.
+
 ```bash
+cd infra
+
 terraform init \
   -backend-config="resource_group_name=rg-tfs-platform-prd-uks-01" \
   -backend-config="storage_account_name=sttfsplatformprduks01" \
@@ -60,6 +64,25 @@ Resources follow the pattern `{type}-{workload}-{env}-{region}-{index}`, compute
 | ----------------------------- | ---------------------------------------------- |
 | `hashicorp/azurerm` `~> 4.68` | Azure infrastructure                           |
 | `kyswtn/porkbun` `~> 0.1.3`   | DNS nameserver delegation at Porkbun registrar |
+
+## CI/CD
+
+Pipelines are in `.azuredevops/` and use shared templates from [`liam-goodchild/pipeline-engineering-templates`](https://github.com/liam-goodchild/pipeline-engineering-templates).
+
+| Pipeline              | Trigger      | Purpose                                           |
+| --------------------- | ------------ | ------------------------------------------------- |
+| `platform-ci.yaml`    | PR to `main` | Lint (Super-Linter) and terraform-docs generation |
+| `platform-cd.yaml`    | Manual       | Terraform plan/apply/destroy for prd              |
+| `platform-infra.yaml` | Manual       | Infrastructure deployment with Key Vault secrets  |
+
+Porkbun secrets are fetched from Key Vault (`kv-platform-prd-uks-01`) via `AzureKeyVault@2` task. Service connection: `sc-platform`.
+
+## Bootstrap Scripts
+
+One-time scripts not managed by Terraform:
+
+- `scripts/bootstrap-tfstate-backend.sh` — creates resource groups and storage accounts for Terraform remote state
+- `scripts/bootstrap-deployment-identities.sh` — creates OIDC service principals and ADO service connections
 
 ## Terraform Docs
 
