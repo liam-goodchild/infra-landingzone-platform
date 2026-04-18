@@ -49,7 +49,7 @@ Porkbun provider authenticates via `PORKBUN_API_KEY` and `PORKBUN_SECRET_API_KEY
 
 ### State backend
 
-Azure Storage with azurerm backend. Resource group `rg-tfs-platform-prd-uks-01`, storage account `sttfsplatformprduks01`. Container name matches repo name (`infra-landingzone-platform`). Single state file covers all resources.
+Azure Storage with azurerm backend. Resource group `rg-tfs-platform-prd-uks-01`, storage account `sttfsplatformprduks01`. Container name matches repository name (`infra-landingzone-platform`). Single state file covers all resources.
 
 ### Tfvars layout
 

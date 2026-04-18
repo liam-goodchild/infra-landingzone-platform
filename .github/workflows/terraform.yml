@@ -26,7 +26,7 @@ permissions:
 jobs:
   # Plan, apply, or destroy Terraform infrastructure
   terraform:
-    name: 'Terraform ${{ inputs.terraform_action || ''plan'' }} (prd)'
+    name: "Terraform ${{ inputs.terraform_action || 'plan' }} (prd)"
     runs-on: ubuntu-latest
     environment: prd
     env:
