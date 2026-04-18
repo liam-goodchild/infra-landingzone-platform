@@ -1,11 +1,11 @@
-name: 'Linting & Validation'
+name: "Linting & Validation"
 
 on:
   pull_request:
     branches:
       - main
     paths-ignore:
-      - '**/README.md'
+      - "**/README.md"
 
 permissions:
   contents: read
@@ -14,21 +14,20 @@ permissions:
 jobs:
   # Lint and validate codebase
   super-linter:
-    name: 'Super-Linter'
+    name: "Super-Linter"
     runs-on: ubuntu-latest
     steps:
-      - name: 'Checkout'
+      - name: "Checkout"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 'Run Super-Linter'
+      - name: "Run Super-Linter"
         uses: super-linter/super-linter@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LINTER_RULES_PATH: .github/linters
           CHECKOV_FILE_NAME: .checkov.yaml
-          PRETTIER_CONFIG_FILE: .prettierrc.json
           TFLINT_CONFIG_FILE: .tflint.hcl
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_GIT_COMMITLINT: false
