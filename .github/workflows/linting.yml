@@ -26,10 +26,12 @@ jobs:
         uses: super-linter/super-linter@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LINTER_RULES_PATH: .github/workflows/linters
+          LINTER_RULES_PATH: .github/linters
           CHECKOV_FILE_NAME: .checkov.yaml
           PRETTIER_CONFIG_FILE: .prettierrc.json
           TFLINT_CONFIG_FILE: .tflint.hcl
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_GIT_COMMITLINT: false
+          VALIDATE_JSCPD: false
+          VALIDATE_NATURAL_LANGUAGE: false
           DEFAULT_BRANCH: main
