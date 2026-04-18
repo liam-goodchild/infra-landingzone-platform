@@ -1,4 +1,5 @@
 skip-check:
+  - CKV_GHA_7 # workflow_dispatch inputs are intentional (plan/apply/destroy selection)
   - CKV_AZURE_111 # Key Vault enables soft delete
   - CKV_AZURE_42 # Key Vault is recoverable
   - CKV_AZURE_110 # Key Vault enables purge protection

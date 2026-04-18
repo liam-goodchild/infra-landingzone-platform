@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Purpose
 
-Terraform root module for the Sky Haven Azure landing zone platform layer. Provisions management group hierarchy, hub networking (VNet, subnets, NSGs, route tables, network watcher), public DNS with Porkbun nameserver delegation, Key Vault, and per-subscription consumption budgets.
+Terraform root module for the Sky Haven Azure landing zone platform layer. Provisions management group hierarchy, hub networking (VNet, subnets, NSGs, route tables, network watcher), public DNS with Porkbun nameserver delegation, and per-subscription consumption budgets.
 
 ## Commands
 
@@ -21,22 +21,18 @@ terraform init \
   -backend-config="container_name=infra-landingzone-platform" \
   -backend-config="key=terraform.tfstate"
 
-terraform plan  -var-file=vars/prd.tfvars
-terraform apply -var-file=vars/prd.tfvars
+terraform plan  -var-file=vars/globals.tfvars -var-file=vars/prd.tfvars
+terraform apply -var-file=vars/globals.tfvars -var-file=vars/prd.tfvars
 ```
 
 ### Bootstrap scripts (one-time, not Terraform-managed)
 
 - `scripts/bootstrap-tfstate-backend.sh` — creates resource groups and storage accounts for Terraform remote state
-- `scripts/bootstrap-deployment-identities.sh` — creates OIDC service principals and ADO service connections
+- `scripts/bootstrap-deployment-identities.sh` — creates OIDC service principals and role assignments
 
 ### Linting
 
-CI uses Super-Linter via ADO pipeline templates from `liam-goodchild/pipeline-engineering-templates`. Checkov config at `.azuredevops/linters/.checkov.yaml` (skips `CKV_TF_1`).
-
-### Documentation
-
-terraform-docs auto-generates into `README.md` via `.terraform-docs.yml`. CI commits docs updates on PR branches.
+CI uses Super-Linter. Configs under `.github/workflows/linters/`: Checkov (`.checkov.yaml`), TFLint (`.tflint.hcl`), Prettier (`.prettierrc.json`).
 
 ## Architecture
 
@@ -46,14 +42,14 @@ terraform-docs auto-generates into `README.md` via `.terraform-docs.yml`. CI com
 
 ### Providers
 
-- `hashicorp/azurerm ~> 4.68` — all Azure resources
+- `hashicorp/azurerm ~> 4.68.0` — all Azure resources
 - `kyswtn/porkbun ~> 0.1.3` — delegates NS records at Porkbun registrar to Azure DNS nameservers
 
-Porkbun provider authenticates via `PORKBUN_API_KEY` and `PORKBUN_SECRET_API_KEY` env vars. In CI these come from ADO variable group `porkbun-secrets`.
+Porkbun provider authenticates via `PORKBUN_API_KEY` and `PORKBUN_SECRET_API_KEY` env vars. In CI these come from the `prd` GitHub environment secrets.
 
 ### State backend
 
-Azure Storage with azurerm backend. Resource group `rg-tfs-platform-prd-uks-01`, storage account `sttfsplatformprduks01`. Container name matches repo name (`infra-landingzone-platform`). Single state file covers all resources.
+Azure Storage with azurerm backend. Resource group `rg-tfs-platform-prd-uks-01`, storage account `sttfsplatformprduks01`. Container name matches repository name (`infra-landingzone-platform`). Single state file covers all resources.
 
 ### Tfvars layout
 
@@ -62,12 +58,12 @@ Flat structure under `infra/vars/`:
 - `globals.tfvars` — empty (reserved for cross-env shared values)
 - `prd.tfvars` — production values (subscriptions, networking, DNS, budgets)
 
-### CI/CD (Azure DevOps)
+### CI/CD (GitHub Actions)
 
-- `.azuredevops/ci-terraform.yaml` — PR pipeline: lint → terraform-docs → plan. Triggers on PRs to `main`.
-- `.azuredevops/dev-terraform.yaml` — manual pipeline: plan/apply/destroy for prd. No auto-trigger. Fetches Porkbun secrets from Key Vault (`kv-platform-prd-uks-01`) via `AzureKeyVault@2` task.
-
-Both pipelines use shared templates from `liam-goodchild/pipeline-engineering-templates` (GitHub) and service connection `sc-platform`.
+- `.github/workflows/linting.yml` — PR pipeline targeting `main`: Super-Linter only.
+- `.github/workflows/terraform.yml` — plan/apply/destroy for `prd`. Auto-triggers on push to `major/**`, `minor/**`, `patch/**` branches (defaults to plan); manual dispatch allows selecting action. Uses `prd` GitHub environment for OIDC secrets.
+- `.github/actions/ensure-tfstate-container/` — composite action: creates tfstate storage container if missing before init.
+- `.github/actions/break-tfstate-lease/` — composite action: breaks blob lease on failed runs (always runs).
 
 ### Resource domains
 
@@ -76,7 +72,6 @@ Both pipelines use shared templates from `liam-goodchild/pipeline-engineering-te
 | `management-groups.tf` | Three MGs (Platform, Personal, Customer) under tenant root + subscription associations  |
 | `networking.tf`        | Hub VNet, subnets (data-driven from `var.subnets`), NSGs, route tables, network watcher |
 | `dns.tf`               | Azure public DNS zones + Porkbun NS delegation                                          |
-| `key-vault.tf`         | Key Vault with RBAC authorization + Key Vault Administrator role for deploying identity |
 | `budgets.tf`           | £2/mo consumption budget per subscription with email alerts                             |
 
 ### Deployment identity model
