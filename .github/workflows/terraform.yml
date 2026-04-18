@@ -1,17 +1,17 @@
-name: 'Terraform'
+name: "Terraform"
 
 on:
   push:
     branches:
-      - 'major/**'
-      - 'minor/**'
-      - 'patch/**'
-    paths-ignore:
-      - '**/README.md'
+      - "major/**"
+      - "minor/**"
+      - "patch/**"
+    paths:
+      - "infra/**"
   workflow_dispatch:
     inputs:
       terraform_action:
-        description: 'Terraform Action'
+        description: "Terraform Action"
         type: choice
         default: plan
         options:
@@ -37,13 +37,13 @@ jobs:
       PORKBUN_API_KEY: ${{ secrets.PORKBUN_API_KEY }}
       PORKBUN_SECRET_API_KEY: ${{ secrets.PORKBUN_SECRET_API_KEY }}
     steps:
-      - name: 'Checkout'
+      - name: "Checkout"
         uses: actions/checkout@v4
 
-      - name: 'Setup Terraform'
+      - name: "Setup Terraform"
         uses: hashicorp/setup-terraform@v3
 
-      - name: 'Ensure State Container'
+      - name: "Ensure State Container"
         uses: ./.github/actions/ensure-tfstate-container
         with:
           storage_account_name: sttfsplatformprduks01
@@ -52,7 +52,7 @@ jobs:
           azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           azure_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: 'Terraform Init'
+      - name: "Terraform Init"
         run: |
           terraform -chdir=infra init \
             -backend-config="resource_group_name=rg-tfs-platform-prd-uks-01" \
@@ -60,28 +60,28 @@ jobs:
             -backend-config="container_name=infra-landingzone-platform" \
             -backend-config="key=terraform.tfstate"
 
-      - name: 'Terraform Plan'
+      - name: "Terraform Plan"
         if: inputs.terraform_action == 'plan' || inputs.terraform_action == ''
         run: |
           terraform -chdir=infra plan \
             -var-file="vars/globals.tfvars" \
             -var-file="vars/prd.tfvars"
 
-      - name: 'Terraform Apply'
+      - name: "Terraform Apply"
         if: inputs.terraform_action == 'apply'
         run: |
           terraform -chdir=infra apply -auto-approve \
             -var-file="vars/globals.tfvars" \
             -var-file="vars/prd.tfvars"
 
-      - name: 'Terraform Destroy'
+      - name: "Terraform Destroy"
         if: inputs.terraform_action == 'destroy'
         run: |
           terraform -chdir=infra destroy -auto-approve \
             -var-file="vars/globals.tfvars" \
             -var-file="vars/prd.tfvars"
 
-      - name: 'Break State Lease'
+      - name: "Break State Lease"
         if: always()
         uses: ./.github/actions/break-tfstate-lease
         with:
