@@ -1,0 +1,73 @@
+name: 'Terraform'
+
+on:
+  push:
+    branches:
+      - 'major/**'
+      - 'minor/**'
+      - 'patch/**'
+    paths-ignore:
+      - '**/README.md'
+  workflow_dispatch:
+    inputs:
+      terraform_action:
+        description: 'Terraform Action'
+        type: choice
+        default: plan
+        options:
+          - plan
+          - apply
+          - destroy
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  # Plan, apply, or destroy Terraform infrastructure
+  terraform:
+    name: 'Terraform ${{ inputs.terraform_action || ''plan'' }} (prd)'
+    runs-on: ubuntu-latest
+    environment: prd
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_USE_OIDC: true
+      PORKBUN_API_KEY: ${{ secrets.PORKBUN_API_KEY }}
+      PORKBUN_SECRET_API_KEY: ${{ secrets.PORKBUN_SECRET_API_KEY }}
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Terraform'
+        uses: hashicorp/setup-terraform@v3
+
+      - name: 'Terraform Init'
+        run: |
+          terraform -chdir=infra init \
+            -backend-config="resource_group_name=rg-tfs-platform-prd-uks-01" \
+            -backend-config="storage_account_name=sttfsplatformprduks01" \
+            -backend-config="container_name=infra-landingzone-platform" \
+            -backend-config="key=terraform.tfstate"
+
+      - name: 'Terraform Plan'
+        if: inputs.terraform_action == 'plan' || inputs.terraform_action == ''
+        run: |
+          terraform -chdir=infra plan \
+            -var-file="vars/globals.tfvars" \
+            -var-file="vars/prd.tfvars"
+
+      - name: 'Terraform Apply'
+        if: inputs.terraform_action == 'apply'
+        run: |
+          terraform -chdir=infra apply -auto-approve \
+            -var-file="vars/globals.tfvars" \
+            -var-file="vars/prd.tfvars"
+
+      - name: 'Terraform Destroy'
+        if: inputs.terraform_action == 'destroy'
+        run: |
+          terraform -chdir=infra destroy -auto-approve \
+            -var-file="vars/globals.tfvars" \
+            -var-file="vars/prd.tfvars"
