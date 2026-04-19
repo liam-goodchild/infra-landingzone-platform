@@ -26,7 +26,7 @@ runs:
   using: composite
   steps:
     - name: "Azure Login"
-      uses: azure/login@v2
+      uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
       with:
         client-id: ${{ inputs.azure_client_id }}
         tenant-id: ${{ inputs.azure_tenant_id }}
@@ -34,11 +34,15 @@ runs:
 
     - name: "Break State Lease"
       shell: bash
+      env:
+        STORAGE_ACCOUNT_NAME: ${{ inputs.storage_account_name }}
+        CONTAINER_NAME: ${{ inputs.container_name }}
+        STATE_KEY: ${{ inputs.state_key }}
       run: |
         LEASE_STATE=$(az storage blob show \
-          --account-name "${{ inputs.storage_account_name }}" \
-          --container-name "${{ inputs.container_name }}" \
-          --name "${{ inputs.state_key }}" \
+          --account-name "$STORAGE_ACCOUNT_NAME" \
+          --container-name "$CONTAINER_NAME" \
+          --name "$STATE_KEY" \
           --auth-mode login \
           --query "properties.lease.state" \
           --output tsv 2>/dev/null || echo "missing")
@@ -46,9 +50,9 @@ runs:
         if [[ "$LEASE_STATE" == "leased" ]]; then
           echo "Active lease found — breaking..."
           az storage blob lease break \
-            --account-name "${{ inputs.storage_account_name }}" \
-            --container-name "${{ inputs.container_name }}" \
-            --blob-name "${{ inputs.state_key }}" \
+            --account-name "$STORAGE_ACCOUNT_NAME" \
+            --container-name "$CONTAINER_NAME" \
+            --blob-name "$STATE_KEY" \
             --auth-mode login \
             --output none
           echo "Lease broken."

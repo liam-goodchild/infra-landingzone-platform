@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4 # zizmor: ignore[artipacked]
         with:
           fetch-depth: 0
 
@@ -31,8 +31,9 @@ jobs:
 
       - name: Determine bump type
         id: bump
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
         run: |
-          BRANCH="${{ steps.branch.outputs.name }}"
           if [[ "$BRANCH" == major/* ]]; then
             echo "type=major" >> "$GITHUB_OUTPUT"
           elif [[ "$BRANCH" == minor/* ]]; then
@@ -46,6 +47,8 @@ jobs:
       - name: Compute next version
         if: steps.bump.outputs.type != 'none'
         id: version
+        env:
+          BUMP_TYPE: ${{ steps.bump.outputs.type }}
         run: |
           LATEST=$(git tag --list 'v*' --sort=-version:refname | head -n 1)
           LATEST=${LATEST:-v0.0.0}
@@ -53,7 +56,7 @@ jobs:
           MINOR=$(echo "$LATEST" | cut -d. -f2)
           PATCH=$(echo "$LATEST" | cut -d. -f3)
 
-          case "${{ steps.bump.outputs.type }}" in
+          case "$BUMP_TYPE" in
             major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
             minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
             patch) PATCH=$((PATCH + 1)) ;;
@@ -63,6 +66,8 @@ jobs:
 
       - name: Create and push tag
         if: steps.bump.outputs.type != 'none'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
-          git tag ${{ steps.version.outputs.tag }}
-          git push origin ${{ steps.version.outputs.tag }}
+          git tag "$TAG"
+          git push origin "$TAG"

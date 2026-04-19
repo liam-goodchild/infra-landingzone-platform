@@ -30,8 +30,11 @@ jobs:
           LINTER_RULES_PATH: .github/linters
           CHECKOV_FILE_NAME: .checkov.yaml
           TFLINT_CONFIG_FILE: .tflint.hcl
+          ZIZMOR_CONFIG_FILE: zizmor.yml
           VALIDATE_ALL_CODEBASE: false
+          VALIDATE_BIOME_FORMAT: false
           VALIDATE_GIT_COMMITLINT: false
           VALIDATE_JSCPD: false
+          VALIDATE_MARKDOWN: false
           VALIDATE_NATURAL_LANGUAGE: false
           DEFAULT_BRANCH: main
