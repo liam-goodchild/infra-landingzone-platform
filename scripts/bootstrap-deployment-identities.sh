@@ -192,6 +192,7 @@ for SCOPE in "${SCOPES[@]}"; do
 			echo "$APP_ID" | gh secret set AZURE_CLIENT_ID --repo "${GITHUB_OWNER}/${REPO}" --env "${ENV}"
 			echo "$TENANT_ID" | gh secret set AZURE_TENANT_ID --repo "${GITHUB_OWNER}/${REPO}" --env "${ENV}"
 			echo "$SUB_ID" | gh secret set AZURE_SUBSCRIPTION_ID --repo "${GITHUB_OWNER}/${REPO}" --env "${ENV}"
+			echo "$TFSTATE_SUB" | gh secret set AZURE_PLATFORM_SUBSCRIPTION_ID --repo "${GITHUB_OWNER}/${REPO}" --env "${ENV}"
 		done
 	fi
 
