@@ -98,8 +98,3 @@ variable "budget_contact_emails" {
   description = "Email addresses to notify for budget alerts."
   type        = list(string)
 }
-
-variable "personal_sp_object_id" {
-  description = "Object ID of the spn-personal service principal. Retrieve with: az ad sp show --display-name spn-personal --query id -o tsv"
-  type        = string
-}
