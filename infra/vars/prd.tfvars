@@ -43,3 +43,8 @@ dns_zones = [
     name = "skyhaven.ltd"
   }
 ]
+
+#########################################
+# RBAC
+#########################################
+personal_sp_object_id = "" # az ad sp show --display-name spn-personal --query id -o tsv
