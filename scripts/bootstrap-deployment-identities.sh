@@ -210,7 +210,7 @@ done
 
 echo "=== spn-platform Graph API permissions ==="
 
-GRAPH_APP_ID="00000003-0000-0000-c00-000000000000"      # Microsoft Graph
+GRAPH_APP_ID="00000003-0000-0000-c000-000000000000" # Microsoft Graph
 APP_READ_ALL_ID="9a5d68dd-52b0-4cc2-bd40-abcf44ac3a30" # Application.Read.All (application permission)
 
 PLATFORM_APP_ID=$(az ad app list --display-name "spn-platform" --query "[0].appId" -o tsv)
