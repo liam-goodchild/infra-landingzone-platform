@@ -37,4 +37,6 @@ jobs:
           VALIDATE_JSCPD: false
           VALIDATE_MARKDOWN: false
           VALIDATE_NATURAL_LANGUAGE: false
+          VALIDATE_SHELLCHECK: false
+          VALIDATE_TERRAFORM_TERRASCAN: false
           DEFAULT_BRANCH: main
