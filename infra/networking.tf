@@ -1,9 +1,3 @@
-resource "azurerm_resource_group" "networking" {
-  name     = "rg-netw-${local.resource_suffix}"
-  location = var.location
-  tags     = local.tags
-}
-
 resource "azurerm_virtual_network" "main" {
   name                = "vnet-${local.resource_suffix}"
   resource_group_name = azurerm_resource_group.networking.name

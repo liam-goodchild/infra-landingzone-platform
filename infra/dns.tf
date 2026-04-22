@@ -1,9 +1,3 @@
-resource "azurerm_resource_group" "dns" {
-  name     = "rg-dns-${local.resource_suffix}"
-  location = var.location
-  tags     = local.tags
-}
-
 resource "azurerm_dns_zone" "public" {
   for_each = { for z in var.dns_zones : z.name => z }
 
