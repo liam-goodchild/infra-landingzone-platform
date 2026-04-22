@@ -1,9 +1,4 @@
 #########################################
-# Naming
-#########################################
-workload = "platform"
-
-#########################################
 # Management Group Subscription Associations
 #########################################
 management_group_subscriptions = {

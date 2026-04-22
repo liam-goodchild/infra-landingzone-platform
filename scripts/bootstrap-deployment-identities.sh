@@ -200,4 +200,40 @@ for SCOPE in "${SCOPES[@]}"; do
 	echo ""
 done
 
+###############################################################################
+# Grant spn-platform Application.Read.All on Microsoft Graph
+#
+# Required so the azuread Terraform provider can look up service principals
+# by display name during plan/apply. Cannot be managed by Terraform itself
+# as it is a prerequisite for the provider to authenticate and query AD.
+###############################################################################
+
+echo "=== spn-platform Graph API permissions ==="
+
+GRAPH_APP_ID="00000003-0000-0000-c000-000000000000"    # Microsoft Graph
+APP_READ_ALL_ID="9a5d68dd-52b0-4cc2-bd40-abcf44ac3a30" # Application.Read.All (application permission)
+
+PLATFORM_APP_ID=$(az ad app list --display-name "spn-platform" --query "[0].appId" -o tsv)
+
+EXISTING_PERMISSION=$(az ad app permission list --id "$PLATFORM_APP_ID" \
+	--query "[?resourceAppId=='${GRAPH_APP_ID}'].resourceAccess[?id=='${APP_READ_ALL_ID}'] | [0].id" \
+	-o tsv 2>/dev/null)
+
+if [[ -n "$EXISTING_PERMISSION" && "$EXISTING_PERMISSION" != "None" ]]; then
+	echo "Application.Read.All already granted, skipping."
+else
+	echo "Adding Application.Read.All permission..."
+	az ad app permission add \
+		--id "$PLATFORM_APP_ID" \
+		--api "$GRAPH_APP_ID" \
+		--api-permissions "${APP_READ_ALL_ID}=Role" \
+		--output none
+fi
+
+echo "Granting admin consent for Application.Read.All..."
+az ad app permission admin-consent --id "$PLATFORM_APP_ID" --output none
+
+echo "Done."
+echo ""
+
 echo "All service principals and federated credentials created successfully."

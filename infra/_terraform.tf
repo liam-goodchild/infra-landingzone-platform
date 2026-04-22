@@ -4,13 +4,17 @@ terraform {
   backend "azurerm" {}
 
   required_providers {
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "~> 3.4"
+    }
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.68.0"
+      version = "~> 4.68"
     }
     porkbun = {
       source  = "kyswtn/porkbun"
-      version = "~> 0.1.3"
+      version = "~> 0.1"
     }
   }
 }
