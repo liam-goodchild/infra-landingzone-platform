@@ -10,7 +10,7 @@ resource "cloudflare_zone_setting" "ssl" {
 
   zone_id    = each.value.id
   setting_id = "ssl"
-  value      = "full_strict"
+  value      = "strict"
 }
 
 resource "cloudflare_zone_setting" "always_use_https" {
