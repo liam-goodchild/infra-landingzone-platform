@@ -35,6 +35,7 @@ subnets = [
 #########################################
 dns_zones = [
   {
-    name = "skyhaven.ltd"
+    name       = "skyhaven.ltd"
+    cloudflare = true
   }
 ]

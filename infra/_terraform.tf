@@ -1,5 +1,5 @@
 terraform {
-  required_version = "~> 1.14.8"
+  required_version = "~> 1.14"
 
   backend "azurerm" {}
 
@@ -11,6 +11,10 @@ terraform {
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 4.68"
+    }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5.0"
     }
     porkbun = {
       source  = "kyswtn/porkbun"

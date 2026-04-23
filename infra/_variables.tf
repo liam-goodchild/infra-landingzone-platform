@@ -90,8 +90,20 @@ variable "management_group_subscriptions" {
 variable "dns_zones" {
   description = "Public DNS zones to create."
   type = list(object({
-    name = string
+    name       = string
+    cloudflare = optional(bool, false)
   }))
+}
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token with Zone and DNS edit permissions."
+  type        = string
+  sensitive   = true
+}
+
+variable "cloudflare_account_id" {
+  description = "Cloudflare account ID."
+  type        = string
 }
 
 variable "budget_contact_emails" {
