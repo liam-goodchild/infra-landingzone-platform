@@ -1,5 +1,5 @@
 #########################################
-# Management Group Subscription Associations
+# MANAGEMENT GROUP SUBSCRIPTION ASSOCIATIONS
 #########################################
 management_group_subscriptions = {
   platform = ["cefc8742-e1dd-4b24-90a9-07e3d3c80d88"]
@@ -8,13 +8,12 @@ management_group_subscriptions = {
 }
 
 #########################################
-# Subscription Budgets
+# SUBSCRIPTION BUDGETS
 #########################################
-
 budget_contact_emails = ["liamgoodchild12@hotmail.co.uk"]
 
 #########################################
-# Networking
+# NETWORKING
 #########################################
 virtual_network = {
   address_space = "10.1.0.0/22"
@@ -35,6 +34,7 @@ subnets = [
 #########################################
 dns_zones = [
   {
-    name = "skyhaven.ltd"
+    name       = "skyhaven.ltd"
+    cloudflare = true
   }
 ]

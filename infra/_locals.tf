@@ -8,6 +8,8 @@ locals {
     var.management_group_subscriptions.customer
   ))
 
+  cloudflare_dns_zones = { for z in var.dns_zones : z.name => z if z.cloudflare }
+
   tags = {
     managed-by = "terraform"
   }
