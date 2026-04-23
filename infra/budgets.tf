@@ -17,4 +17,3 @@ resource "azurerm_consumption_budget_subscription" "all" {
     contact_emails = var.budget_contact_emails
   }
 }
-
